@@ -5,8 +5,12 @@ export const getSavedData = (cb) => {
 }
 
 export const saveData = (data, cb) => {
+  console.log('saveData called here with data:');
+  console.dir(data);
   chrome.storage.sync.set({ namecheap: data }, cb)
 }
+
+export const isValid = (field) => field && field.length > 0;
 
 export const getIpAddress = (cb) => {
   var xhr = new XMLHttpRequest();
