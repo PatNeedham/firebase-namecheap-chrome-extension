@@ -1,3 +1,5 @@
+/* global chrome */
+
 export const getSavedData = (cb) => {
   chrome.storage.sync.get('namecheap', cb);
 }
