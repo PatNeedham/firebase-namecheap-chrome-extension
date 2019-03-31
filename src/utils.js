@@ -20,25 +20,17 @@ export const getIpAddress = (cb) => {
   xhr.send();
 }
 
-export const makeApiRequest = () => {
-  getIpAddress(ip => {
-    console.log('new ip: ' + ip);
+export const makeApiRequest = ({ username, apiKey, ipAddress, domain, tld }) => {
+  return new Promise((resolve, reject) => {
     var xhr = new XMLHttpRequest();
     xhr.onreadystatechange = () => {
       if (xhr.readyState === 4) {
-        return Promise.resolve(xhr.responseXML);
+        resolve(xhr.responseXML);
       }
     }
-    // ClientIp=192.168.1.109
-    let username = 'patneedham';
-    let apiKey = '22ff5e4364c14d6abefc0cbb66d85ac7';
-    const domain = 'crowdsight';
-    const tld = 'io';
-    const url = `https://api.namecheap.com/xml.response?ApiUser=${username}&ApiKey=${apiKey}&UserName=${username}&ClientIp=${ip}&Command=namecheap.domains.dns.getHosts&SLD=${domain}&TLD=${tld}`;
+    const url = `https://api.namecheap.com/xml.response?ApiUser=${username}&ApiKey=${apiKey}&UserName=${username}&ClientIp=${ipAddress}&Command=namecheap.domains.dns.getHosts&SLD=${domain}&TLD=${tld}`;
     xhr.open("GET", chrome.extension.getURL(url), true);
     xhr.send();
-    document.getElementById('makeCallButton').setAttribute('disabled', true)
-    document.getElementById('makeCallButton').innerText = 'Sending...'
   });
 }
 
