@@ -1,6 +1,7 @@
 {
-  "short_name": "React App",
-  "name": "React Extension",
+  "short_name": "Firebase <-> Namecheap",
+  "name": "Firebase Hosting <-> Namecheap DNS",
+  "description": "Set Namecheap DNS settings directly from the Firebase console with the click of the button - no more copy/pastes!",
   "manifest_version": 2,
   "permissions": [
     "activeTab",
@@ -10,7 +11,8 @@
   ],
   "browser_action": {
     "default_popup": "index.html",
-    "default_title": "React Ext"
+    "default_title": "Firebase Hosting <-> Namecheap DNS",
+    "default_icon": "logo.png"
   },
   "version": "1.0"
 }
