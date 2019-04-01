@@ -1,7 +1,11 @@
 /* global chrome */
 
-export const getSavedData = (cb) => {
-  chrome.storage.sync.get('namecheap', cb);
+export const getSavedData = () => {
+  return new Promise((resolve, reject) => {
+    chrome.storage.sync.get('namecheap', data => {
+      resolve(data);
+    });
+  });
 }
 
 export const saveData = (data, cb) => {
@@ -12,16 +16,18 @@ export const saveData = (data, cb) => {
 
 export const isValidField = (field) => field && field.length > 0;
 
-export const getIpAddress = (cb) => {
-  var xhr = new XMLHttpRequest();
-  xhr.responseType = 'json';
-  xhr.onload = function() {
-    var jsonResponse = xhr.response;
-    console.log('jsonResponse.ip: ' + jsonResponse.ip);
-    cb(jsonResponse.ip);
-  }
-  xhr.open("GET", "https://api.ipify.org?format=json", true);
-  xhr.send();
+export const getIpAddress = () => {
+  return new Promise((resolve, reject) => {
+    var xhr = new XMLHttpRequest();
+    xhr.responseType = 'json';
+    xhr.onload = function() {
+      var jsonResponse = xhr.response;
+      console.log('jsonResponse.ip: ' + jsonResponse.ip);
+      resolve(jsonResponse.ip);
+    }
+    xhr.open("GET", "https://api.ipify.org?format=json", true);
+    xhr.send();
+  })
 }
 
 export const makeApiRequest = ({ username, apiKey, ipAddress, domain, tld }) => {
@@ -38,11 +44,13 @@ export const makeApiRequest = ({ username, apiKey, ipAddress, domain, tld }) => 
   });
 }
 
-export const getCurrentTab = (cb) => {
-  var query = { active: true, currentWindow: true };
-  chrome.tabs.query(query, tabs => {
-    cb(tabs[0]);
-  });
+export const getCurrentTab = () => {
+  return new Promise((resolve, reject) => {
+    var query = { active: true, currentWindow: true };
+    chrome.tabs.query(query, tabs => {
+      resolve(tabs[0]);
+    });
+  })
 }
 
 export const isValidURL = (url) => {
@@ -68,6 +76,13 @@ export const gatherInfo = (cb) => {
   chrome.tabs.executeScript({
     code: '(' + modifyDOM + ')();'
   }, cb);
+}
+
+export const getDomainAndTLD = (host) => {
+  const parts = host.split('.');
+  const tld = parts[parts.length - 1];
+  const domain = parts[parts.length - 2];
+  return { domain, tld };
 }
 
 /*

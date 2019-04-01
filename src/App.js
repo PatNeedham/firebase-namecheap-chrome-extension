@@ -1,6 +1,12 @@
 import React, { Component, Fragment } from 'react';
+
 import TextField from '@material-ui/core/TextField';
 import Button from '@material-ui/core/Button';
+import Table from '@material-ui/core/Table';
+import TableBody from '@material-ui/core/TableBody';
+import TableCell from '@material-ui/core/TableCell';
+import TableHead from '@material-ui/core/TableHead';
+import TableRow from '@material-ui/core/TableRow';
 
 import firebaseLogo from './images/FirebaseLogo.png';
 import namecheapLogo from './images/NamecheapLogo.png';
@@ -13,6 +19,8 @@ import {
   getCurrentTab,
   isValidURL,
   gatherInfo,
+  getDomainAndTLD,
+  makeApiRequest,
 } from './utils';
 
 class App extends Component {
@@ -30,30 +38,83 @@ class App extends Component {
     currentTabUrl: '',
     gatheringInfo: false,
     values: [],
+    makingGetHostsRequest: false,
+    getHostsRequestError: null,
+    hosts: null,
+    apiKeyError: false,
   }
 
   componentDidMount() {
-    getIpAddress(ipAddress => {
+    let promises = [
+      getIpAddress(),
+      getSavedData(),
+      getCurrentTab(),
+    ];
+    Promise.all(promises).then(values => {
+      const [ipAddress, data = { namecheap: {} }, tab] = values;
       this.setState({ ipAddress, fetchingIPAddress: false, });
-    });
-    getSavedData((data = { namecheap: {} }) => {
       const { username, apiKey } = data.namecheap;
       const savedCredentials = isValidField(username) && isValidField(apiKey);
       if (savedCredentials) {
         this.setState({ username, apiKey });
       }
       this.setState({ data, fetchingData: false, savedCredentials });
-    });
-    getCurrentTab(tab => {
       this.setState({ currentTabUrl: tab.url });
       if (isValidURL(tab.url)) {
         this.setState({ gatheringInfo: true });
-        gatherInfo((values = []) => this.setState({ gatheringInfo: false, values }));
+        gatherInfo(this.processValues);
       }
-    });
+    })
+  }
+
+  processGetHostsResponse = (xmlDoc) => {
+    const hosts = xmlDoc.getElementsByTagName('Host') || []
+    const errors = xmlDoc.getElementsByTagName('Error') || [];
+    if (errors && errors.length > 0) {
+      alert('there were errors: ' + JSON.stringify(errors, null, 2));
+      console.log(errors);
+      console.dir(errors);
+      console.log(errors[0]);
+      console.dir(errors[0]);
+      this.setState({ getHostsRequestError: errors[0] });
+      if (errors[0].innerHTML.includes('API Key is invalid or API access has not been enabled')) {
+        this.setState({ viewCredentials: true, apiKeyError: true });
+      }
+    } else {
+      const hostValues = [];
+      hosts.forEach((host, i) => {
+        var currentHost = {};
+        var attributes = host.attributes;
+        for (var j = 0; j < attributes.length; j++) {
+          currentHost[attributes[j]] = host.getAttribute(attributes[j])
+        }
+        hostValues.push(currentHost);
+        console.log('for host ' + i + ': ');
+        console.dir(currentHost);
+      })
+      this.setState({ hosts: hostValues });
+    }
+    this.setState({ makingGetHostsRequest: false });
+  }
+
+  processValues = (values = []) => {
+    this.setState({ gatheringInfo: false, values })
+    if (values.length > 0 && values[0].length > 0) {
+      const { domain, tld } = getDomainAndTLD(values[0][0].host.replace(' help_outline', ''));
+      const { username, apiKey, ipAddress } = this.state;
+      this.setState({ makingGetHostsRequest: true });
+      const params = { username, apiKey, ipAddress, domain, tld };
+      makeApiRequest(params).then(this.processGetHostsResponse);
+    } else {
+      console.log('not making api request because values is:')
+      console.dir(values);
+    }
   }
 
   handleChange = name => event => {
+    if (name === 'apiKey') {
+      this.setState({ apiKeyError: false });
+    }
     this.setState({ [name]: event.target.value, credentialsChanged: true });
   }
 
@@ -72,17 +133,28 @@ class App extends Component {
   toggleViewCredentials = () => this.setState({ viewCredentials: !this.state.viewCredentials });
 
   credentialsInputs = () => {
-    const { username, apiKey } = this.state;
+    const { username, apiKey, apiKeyError } = this.state;
     return (
       <Fragment>
         <TextField label="Username" onChange={this.handleChange('username')} value={username} />
         <br/>
         <br/>
-        <TextField label="API Key" onChange={this.handleChange('apiKey')} value={apiKey} />
+        <TextField
+          label="API Key"
+          onChange={this.handleChange('apiKey')}
+          value={apiKey}
+          error={apiKeyError}
+        />
         <br/>
       </Fragment>
     );
   }
+
+  saveButton = (savingData) => (
+    <Button variant="contained" color="primary" disabled={savingData} onClick={this.onSaveClicked}>
+      {savingData ? 'Saving' : 'Save'}
+    </Button>
+  )
 
   renderIntro = () => {
     const { savedCredentials, fetchingData, savingData } = this.state;
@@ -93,16 +165,15 @@ class App extends Component {
             <p>Please enter your Namecheap username and API key here.</p>
             <p>API Access must first be requested, which can be done <a href="https://ap.www.namecheap.com/settings/tools/apiaccess">here</a>.</p>
             {this.credentialsInputs()}
-            <Button variant="contained" color="primary" disabled={savingData} onClick={this.onSaveClicked}>
-              {savingData ? 'Saving' : 'Save'}
-            </Button>
+            {this.saveButton(savingData)}
           </div>
         )}
       </div>
     );
   }
+
   renderCredentials = () => {
-    const { savedCredentials, viewCredentials } = this.state;
+    const { savedCredentials, viewCredentials, credentialsChanged, savingData } = this.state;
     return savedCredentials ? (
       <div>
         <Button
@@ -117,11 +188,62 @@ class App extends Component {
         {viewCredentials && (
           <div className="intro-div">
             {this.credentialsInputs()}
+            <br/>
+            <Button variant="outlined" color="secondary">
+              Delete
+            </Button>
+            {credentialsChanged && this.saveButton(savingData)}
           </div>
         )}
       </div>
     ) : null;
   }
+
+  renderHostRequestError = (error) => {
+    return (
+      <div>
+        <p>{error.innerHTML}</p>
+        <br/>
+      </div>
+    )
+  }
+
+  renderRecordTypesTable = (values) => {
+    const { makingGetHostsRequest, getHostsRequestError } = this.state;
+    if (makingGetHostsRequest) {
+
+    }
+    if (!makingGetHostsRequest && getHostsRequestError) {
+      return this.renderHostRequestError(getHostsRequestError);
+    }
+    return (
+      <Table>
+        <TableHead>
+          <TableRow>
+            <TableCell>Record type</TableCell>
+            <TableCell>Host</TableCell>
+            <TableCell>Value</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {values[0].map((value, index) => (
+            <TableRow key={`${value.host}_${index}`}>
+              <TableCell component="th" scope="row">
+                {value.host.replace(' help_outline', '')}
+              </TableCell>
+              <TableCell component="th" scope="row">
+                {value.recordType}
+              </TableCell>
+              <TableCell component="th" scope="row">
+                {value.value.replace(' content_copy', '')}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    )
+  }
+
   renderSpecificModalInstructions = () => {
     const { gatheringInfo, values } = this.state;
     return gatheringInfo ? (
@@ -130,11 +252,7 @@ class App extends Component {
       </div>
     ) : (
       <div>
-        {values.length > 0 ? (
-          <ul>
-            {values[0].map(value => (<li>{JSON.stringify(value, null, 2)}</li>))}
-          </ul>
-        ) : (
+        {values.length > 0 && values[0].length > 0 ? this.renderRecordTypesTable(values) : (
           <p>Looks like you're on the right url, but you must click on the blue "View" button within the domains table</p>
         )}
       </div>
