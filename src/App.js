@@ -5,7 +5,14 @@ import Button from '@material-ui/core/Button';
 import firebaseLogo from './images/FirebaseLogo.png';
 import namecheapLogo from './images/NamecheapLogo.png';
 import './App.css';
-import { getIpAddress, getSavedData, saveData, isValid } from './utils';
+import {
+  getIpAddress,
+  getSavedData,
+  saveData,
+  isValidField,
+  getCurrentTab,
+  isValidURL,
+} from './utils';
 
 class App extends Component {
   state = {
@@ -19,6 +26,7 @@ class App extends Component {
     savedCredentials: false,
     viewCredentials: false,
     credentialsChanged: false,
+    currentTabUrl: '',
   }
 
   componentDidMount() {
@@ -27,12 +35,13 @@ class App extends Component {
     });
     getSavedData((data = { namecheap: {} }) => {
       const { username, apiKey } = data.namecheap;
-      const savedCredentials = isValid(username) && isValid(apiKey);
+      const savedCredentials = isValidField(username) && isValidField(apiKey);
       if (savedCredentials) {
         this.setState({ username, apiKey });
       }
       this.setState({ data, fetchingData: false, savedCredentials });
     });
+    getCurrentTab(tab => this.setState({ currentTabUrl: tab.url }));
   }
 
   handleChange = name => event => {
@@ -105,6 +114,7 @@ class App extends Component {
     ) : null;
   }
   render() {
+    const { currentTabUrl } = this.state;
     return (
       <div className="App">
         <header>
@@ -118,8 +128,18 @@ class App extends Component {
             {"Welcome to the Firebase Hosting <-> Namecheap DNS Chrome Extension"}
           </p>
         </header>
-        {this.renderIntro()}
-        {this.renderCredentials()}
+        {isValidURL(currentTabUrl) ? (
+          <Fragment>
+            {this.renderIntro()}
+            {this.renderCredentials()}
+          </Fragment>
+        ) : (
+          <div>
+            <p>You are currently on the url {currentTabUrl}, but this extension is only intended to work on URLs in this format:</p>
+            <br/>
+            <span>{"https://console.firebase.google.com/u/<number>/project/<project-id>/hosting/sites/<project-id>"}</span>
+          </div>
+        )}
       </div>
     );
   }

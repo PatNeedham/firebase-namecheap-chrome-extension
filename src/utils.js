@@ -10,7 +10,7 @@ export const saveData = (data, cb) => {
   chrome.storage.sync.set({ namecheap: data }, cb)
 }
 
-export const isValid = (field) => field && field.length > 0;
+export const isValidField = (field) => field && field.length > 0;
 
 export const getIpAddress = (cb) => {
   var xhr = new XMLHttpRequest();
@@ -37,6 +37,21 @@ export const makeApiRequest = ({ username, apiKey, ipAddress, domain, tld }) => 
     xhr.send();
   });
 }
+
+export const getCurrentTab = (cb) => {
+  var query = { active: true, currentWindow: true };
+  chrome.tabs.query(query, tabs => {
+    cb(tabs[0]);
+  });
+}
+
+export const isValidURL = (url) => {
+  return url.includes('console.firebase.google.com/u/') && url.includes('/hosting/sites/');
+}
+
+export const ROW_SELECTOR = 'md-dialog > div.h5g-dialog-connect-domain-scroll-container > h5g-verify-ssl > div.h5g-verify-ssl-quick-steps > table > tbody > tr';
+
+
 
 /*
 to be put in makeApiRequest promise.then call:
