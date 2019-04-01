@@ -12,6 +12,7 @@ import {
   isValidField,
   getCurrentTab,
   isValidURL,
+  gatherInfo,
 } from './utils';
 
 class App extends Component {
@@ -27,6 +28,8 @@ class App extends Component {
     viewCredentials: false,
     credentialsChanged: false,
     currentTabUrl: '',
+    gatheringInfo: false,
+    values: [],
   }
 
   componentDidMount() {
@@ -41,7 +44,13 @@ class App extends Component {
       }
       this.setState({ data, fetchingData: false, savedCredentials });
     });
-    getCurrentTab(tab => this.setState({ currentTabUrl: tab.url }));
+    getCurrentTab(tab => {
+      this.setState({ currentTabUrl: tab.url });
+      if (isValidURL(tab.url)) {
+        this.setState({ gatheringInfo: true });
+        gatherInfo((values = []) => this.setState({ gatheringInfo: false, values }));
+      }
+    });
   }
 
   handleChange = name => event => {
@@ -113,6 +122,25 @@ class App extends Component {
       </div>
     ) : null;
   }
+  renderSpecificModalInstructions = () => {
+    const { gatheringInfo, values } = this.state;
+    return gatheringInfo ? (
+      <div>
+        <p>Loading...</p>
+      </div>
+    ) : (
+      <div>
+        {values.length > 0 ? (
+          <ul>
+            {values[0].map(value => (<li>{JSON.stringify(value, null, 2)}</li>))}
+          </ul>
+        ) : (
+          <p>Looks like you're on the right url, but you must click on the blue "View" button within the domains table</p>
+        )}
+      </div>
+    );
+  }
+
   render() {
     const { currentTabUrl } = this.state;
     return (
@@ -131,7 +159,10 @@ class App extends Component {
         {isValidURL(currentTabUrl) ? (
           <Fragment>
             {this.renderIntro()}
+            <br/>
             {this.renderCredentials()}
+            <br/>
+            {this.renderSpecificModalInstructions()}
           </Fragment>
         ) : (
           <div>

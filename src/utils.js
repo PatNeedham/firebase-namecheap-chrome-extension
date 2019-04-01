@@ -51,7 +51,24 @@ export const isValidURL = (url) => {
 
 export const ROW_SELECTOR = 'md-dialog > div.h5g-dialog-connect-domain-scroll-container > h5g-verify-ssl > div.h5g-verify-ssl-quick-steps > table > tbody > tr';
 
+export const modifyDOM = () => {
+  let matches = document.querySelectorAll(ROW_SELECTOR);
+  let values = [];
+  matches.forEach((value, key) => {
+    let recordType = value.cells[0].textContent.trim();
+    let host = value.cells[1].textContent.trim();
+    let rowValue = value.cells[2].textContent.trim();
+    let entry = { recordType, host, value: rowValue };
+    values.push(entry);
+  });
+  return values;
+}
 
+export const gatherInfo = (cb) => {
+  chrome.tabs.executeScript({
+    code: '(' + modifyDOM + ')();'
+  }, cb);
+}
 
 /*
 to be put in makeApiRequest promise.then call:
