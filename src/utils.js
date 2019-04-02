@@ -9,8 +9,6 @@ export const getSavedData = () => {
 }
 
 export const saveData = (data, cb) => {
-  console.log('saveData called here with data:');
-  console.dir(data);
   chrome.storage.sync.set({ namecheap: data }, cb)
 }
 
@@ -21,9 +19,7 @@ export const getIpAddress = () => {
     var xhr = new XMLHttpRequest();
     xhr.responseType = 'json';
     xhr.onload = function() {
-      var jsonResponse = xhr.response;
-      console.log('jsonResponse.ip: ' + jsonResponse.ip);
-      resolve(jsonResponse.ip);
+      resolve(xhr.response.ip);
     }
     xhr.open("GET", "https://api.ipify.org?format=json", true);
     xhr.send();

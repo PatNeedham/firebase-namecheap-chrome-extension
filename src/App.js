@@ -20,8 +20,10 @@ import {
   isValidURL,
   gatherInfo,
   getDomainAndTLD,
-  makeApiRequest,
 } from './utils';
+import {
+  getHosts,
+} from './namecheapAPI';
 
 class App extends Component {
   state = {
@@ -68,30 +70,23 @@ class App extends Component {
   }
 
   processGetHostsResponse = (xmlDoc) => {
-    const hosts = xmlDoc.getElementsByTagName('Host') || []
+    const hosts = xmlDoc.getElementsByTagName('host') || []
     const errors = xmlDoc.getElementsByTagName('Error') || [];
     if (errors && errors.length > 0) {
-      alert('there were errors: ' + JSON.stringify(errors, null, 2));
-      console.log(errors);
-      console.dir(errors);
-      console.log(errors[0]);
-      console.dir(errors[0]);
       this.setState({ getHostsRequestError: errors[0] });
       if (errors[0].innerHTML.includes('API Key is invalid or API access has not been enabled')) {
         this.setState({ viewCredentials: true, apiKeyError: true });
       }
     } else {
       const hostValues = [];
-      hosts.forEach((host, i) => {
+      for (let host of hosts) {
         var currentHost = {};
         var attributes = host.attributes;
         for (var j = 0; j < attributes.length; j++) {
-          currentHost[attributes[j]] = host.getAttribute(attributes[j])
+          currentHost[attributes[j].nodeName] = attributes[j].nodeValue;
         }
         hostValues.push(currentHost);
-        console.log('for host ' + i + ': ');
-        console.dir(currentHost);
-      })
+      }
       this.setState({ hosts: hostValues });
     }
     this.setState({ makingGetHostsRequest: false });
@@ -104,10 +99,7 @@ class App extends Component {
       const { username, apiKey, ipAddress } = this.state;
       this.setState({ makingGetHostsRequest: true });
       const params = { username, apiKey, ipAddress, domain, tld };
-      makeApiRequest(params).then(this.processGetHostsResponse);
-    } else {
-      console.log('not making api request because values is:')
-      console.dir(values);
+      getHosts(params).then(this.processGetHostsResponse);
     }
   }
 
@@ -209,7 +201,7 @@ class App extends Component {
   }
 
   renderRecordTypesTable = (values) => {
-    const { makingGetHostsRequest, getHostsRequestError } = this.state;
+    const { makingGetHostsRequest, getHostsRequestError, hosts } = this.state;
     if (makingGetHostsRequest) {
 
     }
@@ -217,30 +209,59 @@ class App extends Component {
       return this.renderHostRequestError(getHostsRequestError);
     }
     return (
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableCell>Record type</TableCell>
-            <TableCell>Host</TableCell>
-            <TableCell>Value</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {values[0].map((value, index) => (
-            <TableRow key={`${value.host}_${index}`}>
-              <TableCell component="th" scope="row">
-                {value.host.replace(' help_outline', '')}
-              </TableCell>
-              <TableCell component="th" scope="row">
-                {value.recordType}
-              </TableCell>
-              <TableCell component="th" scope="row">
-                {value.value.replace(' content_copy', '')}
-              </TableCell>
+      <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+        <h3>The values Firebase wants you to add</h3>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>Record type</TableCell>
+              <TableCell>Host</TableCell>
+              <TableCell>Value</TableCell>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHead>
+          <TableBody>
+            {values[0].map((value, index) => (
+              <TableRow key={`${value.host}_${index}`}>
+                <TableCell component="th" scope="row">
+                  {value.host.replace(' help_outline', '')}
+                </TableCell>
+                <TableCell component="th" scope="row">
+                  {value.recordType}
+                </TableCell>
+                <TableCell component="th" scope="row">
+                  {value.value.replace(' content_copy', '')}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+        <br/>
+        <h3>The A-record values Namecheap already has for this domain of yours</h3>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>Name</TableCell>
+              <TableCell>Type</TableCell>
+              <TableCell>Address</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {(hosts || []).filter(h => h.Type === 'A').map(({ HostId, Name, Type, Address, IsActive}, index) => (
+              <TableRow key={`${HostId}`}>
+                <TableCell component="th" scope="row">
+                  {Name}
+                </TableCell>
+                <TableCell component="th" scope="row">
+                  {Type}
+                </TableCell>
+                <TableCell component="th" scope="row">
+                  {Address}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     )
   }
 
