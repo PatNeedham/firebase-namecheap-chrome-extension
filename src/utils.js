@@ -30,20 +30,6 @@ export const getIpAddress = () => {
   })
 }
 
-export const makeApiRequest = ({ username, apiKey, ipAddress, domain, tld }) => {
-  return new Promise((resolve, reject) => {
-    var xhr = new XMLHttpRequest();
-    xhr.onreadystatechange = () => {
-      if (xhr.readyState === 4) {
-        resolve(xhr.responseXML);
-      }
-    }
-    const url = `https://api.namecheap.com/xml.response?ApiUser=${username}&ApiKey=${apiKey}&UserName=${username}&ClientIp=${ipAddress}&Command=namecheap.domains.dns.getHosts&SLD=${domain}&TLD=${tld}`;
-    xhr.open("GET", chrome.extension.getURL(url), true);
-    xhr.send();
-  });
-}
-
 export const getCurrentTab = () => {
   return new Promise((resolve, reject) => {
     var query = { active: true, currentWindow: true };
@@ -84,23 +70,3 @@ export const getDomainAndTLD = (host) => {
   const domain = parts[parts.length - 2];
   return { domain, tld };
 }
-
-/*
-to be put in makeApiRequest promise.then call:
-var xmlDoc = xhr.responseXML;
-var hosts = xmlDoc.getElementsByTagName('Host')
-var hostValues = [];
-for (var i = 0; i < hosts.length; i++) {
-  var currentHost = {};
-  var attributes = hosts[i].attributes;
-  for (var j = 0; j < attributes.length; j++) {
-    currentHost[attributes[j]] = hosts[i].getAttribute(attributes[j])
-  }
-  hostValues.push(currentHost);
-  console.log('for host ' + i + ': ');
-  console.dir(currentHost);
-}
-document.getElementById('makeCallButton').setAttribute('disabled', false)
-document.getElementById('makeCallButton').innerText = 'Make API Call!'
-
-*/
