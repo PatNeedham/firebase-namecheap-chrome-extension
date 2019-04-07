@@ -2,11 +2,6 @@ import React, { Component, Fragment } from 'react';
 
 import TextField from '@material-ui/core/TextField';
 import Button from '@material-ui/core/Button';
-import Table from '@material-ui/core/Table';
-import TableBody from '@material-ui/core/TableBody';
-import TableCell from '@material-ui/core/TableCell';
-import TableHead from '@material-ui/core/TableHead';
-import TableRow from '@material-ui/core/TableRow';
 
 import firebaseLogo from './images/FirebaseLogo.png';
 import namecheapLogo from './images/NamecheapLogo.png';
@@ -26,6 +21,7 @@ import {
 } from './namecheapAPI';
 import Error from './components/Error';
 import ExistingHostsTable from './components/ExistingHostsTable';
+import FirebaseRequirementsTable from './components/FirebaseRequirementsTable';
 
 class App extends Component {
   state = {
@@ -195,41 +191,17 @@ class App extends Component {
 
   renderRecordTypesTable = (values) => {
     const { makingGetHostsRequest, getHostsRequestError, hosts } = this.state;
-    if (!makingGetHostsRequest && getHostsRequestError) {
-      return <Error message={getHostsRequestError.innerHTML} />;
-    }
-    return (
+    return (!makingGetHostsRequest && getHostsRequestError) ? (
+      <Error message={getHostsRequestError.innerHTML} />
+    ) : (
       <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
         <h3>The values Firebase wants you to add</h3>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Record type</TableCell>
-              <TableCell>Host</TableCell>
-              <TableCell>Value</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {values[0].map((value, index) => (
-              <TableRow key={`${value.host}_${index}`}>
-                <TableCell component="th" scope="row">
-                  {value.host.replace(' help_outline', '')}
-                </TableCell>
-                <TableCell component="th" scope="row">
-                  {value.recordType}
-                </TableCell>
-                <TableCell component="th" scope="row">
-                  {value.value.replace(' content_copy', '')}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <FirebaseRequirementsTable values={values} />
         <br/>
         <h3>The A-record values Namecheap already has for this domain of yours</h3>
         <ExistingHostsTable hosts={hosts} makingGetHostsRequest={makingGetHostsRequest} />
       </div>
-    )
+    );
   }
 
   renderSpecificModalInstructions = () => {

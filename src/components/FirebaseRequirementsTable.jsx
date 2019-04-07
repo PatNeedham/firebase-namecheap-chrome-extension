@@ -1,5 +1,4 @@
 import React from 'react';
-import CircularProgress from '@material-ui/core/CircularProgress'
 import Table from '@material-ui/core/Table';
 import TableBody from '@material-ui/core/TableBody';
 import TableCell from '@material-ui/core/TableCell';
@@ -8,42 +7,27 @@ import TableRow from '@material-ui/core/TableRow';
 
 
 const ExistingHostsTable = (props) => {
-  const { makingGetHostsRequest, hosts } = props;
-  if (makingGetHostsRequest) {
-    return (
-      <div style={{
-        width: '100%',
-        height: 100,
-        padding: 20,
-        display: 'flex',
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center'
-      }}>
-        <CircularProgress />
-      </div>
-    );
-  }
+  const { values } = props;
   return (
     <Table>
       <TableHead>
         <TableRow>
-          <TableCell>Name</TableCell>
-          <TableCell>Type</TableCell>
-          <TableCell>Address</TableCell>
+          <TableCell>Record type</TableCell>
+          <TableCell>Host</TableCell>
+          <TableCell>Value</TableCell>
         </TableRow>
       </TableHead>
       <TableBody>
-        {(hosts || []).filter(h => h.Type === 'A').map(({ HostId, Name, Type, Address, IsActive}, index) => (
-          <TableRow key={`${HostId}`}>
+        {values[0].map((value, index) => (
+          <TableRow key={`${value.host}_${index}`}>
             <TableCell component="th" scope="row">
-              {Name}
+              {value.host.replace(' help_outline', '')}
             </TableCell>
             <TableCell component="th" scope="row">
-              {Type}
+              {value.recordType}
             </TableCell>
             <TableCell component="th" scope="row">
-              {Address}
+              {value.value.replace(' content_copy', '')}
             </TableCell>
           </TableRow>
         ))}
