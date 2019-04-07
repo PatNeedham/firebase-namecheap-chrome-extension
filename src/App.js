@@ -24,6 +24,8 @@ import {
 import {
   getHosts,
 } from './namecheapAPI';
+import Error from './components/Error';
+import ExistingHostsTable from './components/ExistingHostsTable';
 
 class App extends Component {
   state = {
@@ -191,22 +193,10 @@ class App extends Component {
     ) : null;
   }
 
-  renderHostRequestError = (error) => {
-    return (
-      <div>
-        <p>{error.innerHTML}</p>
-        <br/>
-      </div>
-    )
-  }
-
   renderRecordTypesTable = (values) => {
     const { makingGetHostsRequest, getHostsRequestError, hosts } = this.state;
-    if (makingGetHostsRequest) {
-
-    }
     if (!makingGetHostsRequest && getHostsRequestError) {
-      return this.renderHostRequestError(getHostsRequestError);
+      return <Error message={getHostsRequestError.innerHTML} />;
     }
     return (
       <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
@@ -237,30 +227,7 @@ class App extends Component {
         </Table>
         <br/>
         <h3>The A-record values Namecheap already has for this domain of yours</h3>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Name</TableCell>
-              <TableCell>Type</TableCell>
-              <TableCell>Address</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {(hosts || []).filter(h => h.Type === 'A').map(({ HostId, Name, Type, Address, IsActive}, index) => (
-              <TableRow key={`${HostId}`}>
-                <TableCell component="th" scope="row">
-                  {Name}
-                </TableCell>
-                <TableCell component="th" scope="row">
-                  {Type}
-                </TableCell>
-                <TableCell component="th" scope="row">
-                  {Address}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <ExistingHostsTable hosts={hosts} makingGetHostsRequest={makingGetHostsRequest} />
       </div>
     )
   }
