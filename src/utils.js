@@ -66,3 +66,12 @@ export const getDomainAndTLD = (host) => {
   const domain = parts[parts.length - 2];
   return { domain, tld };
 }
+
+export const getSubdomain = (values) => {
+  if (!values || !values.length || !values[0].length) {
+    return null;
+  }
+  const full_domain = values[0][0].host.replace(' help_outline', '')
+  const parts = full_domain.split('.')
+  return parts.slice(0, parts.length - 2).join('.');
+}

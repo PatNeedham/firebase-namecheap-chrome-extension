@@ -6,7 +6,7 @@ import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
 
 
-const ExistingHostsTable = (props) => {
+const FirebaseRequirementsTable = (props) => {
   const { values } = props;
   return (
     <Table>
@@ -36,4 +36,4 @@ const ExistingHostsTable = (props) => {
   )
 }
 
-export default ExistingHostsTable;
+export default FirebaseRequirementsTable;

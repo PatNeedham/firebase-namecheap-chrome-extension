@@ -15,9 +15,11 @@ import {
   isValidURL,
   gatherInfo,
   getDomainAndTLD,
+  getSubdomain,
 } from './utils';
 import {
   getHosts,
+  setHosts,
 } from './namecheapAPI';
 import Error from './components/Error';
 import ExistingHostsTable from './components/ExistingHostsTable';
@@ -39,6 +41,7 @@ class App extends Component {
     gatheringInfo: false,
     values: [],
     makingGetHostsRequest: false,
+    makingSetHostsRequest: false,
     getHostsRequestError: null,
     hosts: null,
     apiKeyError: false,
@@ -90,13 +93,26 @@ class App extends Component {
     this.setState({ makingGetHostsRequest: false });
   }
 
+  processSetHostsResponse = (xmlDoc) => {
+    this.setState({ makingSetHostsRequest: false });
+    console.log('xmlDoc looks like:')
+    console.dir(xmlDoc);
+  }
+
   processValues = (values = []) => {
     this.setState({ gatheringInfo: false, values })
     if (values.length > 0 && values[0].length > 0) {
       const { domain, tld } = getDomainAndTLD(values[0][0].host.replace(' help_outline', ''));
       const { username, apiKey, ipAddress } = this.state;
       this.setState({ makingGetHostsRequest: true });
-      const params = { username, apiKey, ipAddress, domain, tld };
+      const params = {
+        ApiUser: username,
+        UserName: username,
+        ApiKey: apiKey,
+        ClientIp: ipAddress,
+        SLD: domain,
+        TLD: tld,
+      };
       getHosts(params).then(this.processGetHostsResponse);
     }
   }
@@ -189,14 +205,46 @@ class App extends Component {
     ) : null;
   }
 
+  onAddDNS = () => {
+    const { username, apiKey, ipAddress, values, hosts } = this.state;
+    const { domain, tld } = getDomainAndTLD(values[0][0].host.replace(' help_outline', ''));
+    const subdomain = getSubdomain(values);
+    this.setState({ makingSetHostsRequest: true });
+    const params = {
+      ApiUser: username,
+      UserName: username,
+      ApiKey: apiKey,
+      ClientIp: ipAddress,
+      SLD: domain,
+      TLD: tld,
+      hosts: hosts,
+      values,
+      subdomain,
+    };
+    setHosts(params).then(this.processSetHostsResponse);
+  }
+
   renderRecordTypesTable = (values) => {
-    const { makingGetHostsRequest, getHostsRequestError, hosts } = this.state;
+    const { makingGetHostsRequest, getHostsRequestError, hosts, makingSetHostsRequest } = this.state;
+    const subdomain = getSubdomain(values);
     return (!makingGetHostsRequest && getHostsRequestError) ? (
       <Error message={getHostsRequestError.innerHTML} />
     ) : (
       <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
         <h3>The values Firebase wants you to add</h3>
         <FirebaseRequirementsTable values={values} />
+        <p>The subdomain is: {subdomain}</p>
+        {subdomain && (
+          <div style={{ maxWidth: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Button variant="contained" color="primary" disabled={makingSetHostsRequest} onClick={this.onAddDNS}>
+              {
+                makingSetHostsRequest ?
+                'Loading...' :
+                'Add this value to Namecheap'
+              }
+            </Button>
+          </div>
+        )}
         <br/>
         <h3>The A-record values Namecheap already has for this domain of yours</h3>
         <ExistingHostsTable hosts={hosts} makingGetHostsRequest={makingGetHostsRequest} />
